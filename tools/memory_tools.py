@@ -9,7 +9,8 @@ DATABASE_PATH = (
         )
 
 def initialise_database() -> None:
-    """Create the memory database and tables if needed."""
+    """Create or update the memory database and tables if needed."""
+    
 
     DATABASE_PATH.parent.mkdir(
             parents=True,
@@ -23,10 +24,28 @@ def initialise_database() -> None:
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     project_name TEXT NOT NULL,
                     note TEXT NOT NULL,
-                    created_at TEXT NOT NULL
+                    created_at TEXT NOT NULL,
+                    completed_at TEXT
                 )
                 """
                 )
+
+        columns = connection.execute(
+                "PRAGMA table_info(project_notes)"
+                ).fetchall()
+
+        column_names = {
+                column[1]
+                for column in columns
+                }
+
+        if "completed_at" not in column_names:
+            connection.execute(
+                    """
+                    ALTER TABLE project_notes
+                    ADD COLUMN completed_at TEXT
+                    """
+                    )
 
 def remember_project_note(
         project_name: str,
@@ -100,6 +119,7 @@ def get_project_notes(
                     created_at
                 FROM project_notes
                 WHERE lower(project_name) = lower(?)
+                AND completed_at IS NULL
                 ORDER BY id DESC
                 LIMIT ?
                 """,
@@ -123,3 +143,43 @@ def get_project_notes(
                 "project": project_name,
                 "notes": notes,
                 }
+
+def complete_project_note(note_id: int) -> dict:
+    """Mark a stored project note as completed."""
+
+    initialise_database()
+
+    completed_at = datetime.now().isoformat(
+        timespec="seconds"
+    )
+
+    with sqlite3.connect(DATABASE_PATH) as connection:
+
+        cursor = connection.execute(
+            """
+            UPDATE project_notes
+            SET completed_at = ?
+            WHERE id = ?
+            AND completed_at IS NULL
+            """,
+            (
+                completed_at,
+                note_id,
+            )
+        )
+
+        if cursor.rowcount == 0:
+            return {
+                "success": False,
+                "message": (
+                    f"Active note {note_id} was not found "
+                    "or is already completed."
+                )
+            }
+
+    return {
+        "success": True,
+        "id": note_id,
+        "completed_at": completed_at,
+        "message": f"Note {note_id} marked as completed."
+    }

@@ -20,6 +20,7 @@ from typing import cast
 from tools.memory_tools import (
         remember_project_note,
         get_project_notes,
+        complete_project_note,
         )
 
 import json
@@ -51,6 +52,7 @@ class LaptopAgent:
                 "search_project": search_project,
                 "remember_project_note": remember_project_note,
                 "get_project_notes": get_project_notes,
+                "complete_project_note": complete_project_note,
                 }
 
         self.tools: list[ChatCompletionToolParam] = [
