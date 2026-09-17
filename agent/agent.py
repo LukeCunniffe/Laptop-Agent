@@ -8,11 +8,11 @@ from tools.project_tools import (
         list_projects, 
         open_project,
         get_project_files,
+        read_project_file,
         )
 
 from tools.application_tools import launch_application
 from tools.git_tools import get_git_status, get_recent_commits
-from groq.types.chat import ChatCompletionMessageParam
 from typing import cast
 
 import json
@@ -39,6 +39,7 @@ class LaptopAgent:
                 "get_git_status": get_git_status,
                 "get_recent_commits": get_recent_commits,
                 "get_project_files": get_project_files,
+                "read_project_file": read_project_file,
                 }
 
         self.tools: list[ChatCompletionToolParam] = [
@@ -69,9 +70,8 @@ class LaptopAgent:
                     "function": {
                         "name": "list_projects",
                         "description": (
-                            "List only the names of projects inside the user's "
-                            "~/projects directory. Use get_projet_files when the "
-                            "user want to inspect the contents or structure of a project."
+                            "List the names of projects inside ~/projects. Use only when "
+                            "the user asks what projects exist or the project name is unknown."
                             ),
                         "parameters": {
                             "type": "object",
@@ -83,7 +83,10 @@ class LaptopAgent:
                     "type": "function",
                     "function": {
                         "name": "launch_application",
-                        "description": "Launch an approved application on the user's ubuntu laptop.",
+                        "description": (
+                            "Launch an approved application. ONLY use this when the user "
+                            "explicitly asks to launch or open an application."
+                            ),
                         "parameters": {
                             "type": "object",
                             "properties": {
@@ -101,8 +104,8 @@ class LaptopAgent:
                         "function": {
                             "name": "open_project",
                             "description": (
-                                "Find a named project inside the user's ~/projects "
-                                "directory and open it in Neovim."
+                                "Open a project in Neovim. ONLY use this when the user "
+                                "explicitly asks to open a project."
                                 ),
                             "parameters": {
                                 "type": "object",
@@ -169,9 +172,9 @@ class LaptopAgent:
                         "function": {
                             "name": "get_project_files",
                             "description": (
-                                "Inspect and return the files and folders inside a specific "
-                                "project. Use this when the user asks about a project's "
-                                "structure, contents, files, or other directories."
+                                "Return the file and folder structure of a project. Use when "
+                                "the user asks about the project's structure, files, or folders. "
+                                "Do not use it when an exact file path has already been supplied."
                                 ),
                             "parameters": {
                                 "type": "object",
@@ -189,6 +192,40 @@ class LaptopAgent:
                                         }
                                     },
                                 "required": ["project_name"],
+                                },
+                            },
+                        },
+                {
+                        "type": "function",
+                        "function": {
+                            "name": "read_project_file",
+                            "description": (
+                                "Read the contents of a specific text or source-code file "
+                                "inside a project. Use this directly when the user provides "
+                                "a project name and file path. After a successful read, answer "
+                                "the user's question rather than calling unrelated tools."
+                                ),
+                            "parameters": {
+                                "type": "object",
+                                "properties": {
+                                    "project_name": {
+                                        "type": "string",
+                                        "description": "The project conatining the file."
+                                        },
+                                    "file_path": {
+                                        "type": "string",
+                                        "description": (
+                                            "Path to the file relative to the project root, "
+                                            "for example 'agent/agent.py'."
+                                            )
+                                        },
+                                    "max_characters": {
+                                        "type": "integer",
+                                        "description": "Maximum number of characters to read.",
+                                        "maximum": 4000,
+                                        }
+                                    },
+                                "required": ["project_name", "file_path"],
                                 },
                             },
                         },

@@ -146,3 +146,84 @@ def get_project_files(
             "success": False,
             "message": f"Could not find project '{project_name}'."
             }
+
+def read_project_file(
+        project_name: str,
+        file_path: str,
+        max_characters: int = 4000
+        ) -> dict:
+    """Read a text file from inside an allowed project"""
+
+    max_characters = min(max_characters, 4000)
+
+    requested_name = (
+            project_name
+            .lower()
+            .replace("_", "")
+            .replace("-", "")
+            .replace(" ", "")
+            )
+
+    for project in PROJECTS_DIRECTORY.iterdir():
+
+        if not project.is_dir():
+            continue
+
+        actual_name = (
+                project.name
+                .lower()
+                .replace("_", "")
+                .replace("-", "")
+                .replace(" ", "")
+                )
+
+        if actual_name != requested_name:
+            continue
+
+        target = (project / file_path).resolve()
+        project_root = project.resolve()
+
+        # Prevent the AI escaping the project directory
+        if project_root not in target.parents:
+            return {
+                    "success": False,
+                    "message": "Access outside the project directory is not allowed."
+                    }
+
+        if not target.exists():
+            return {
+                    "success": False,
+                    "message": f"File '{file_path}' does not exist."
+                    }
+
+        if not target.is_file():
+            return {
+                    "success": False,
+                    "message": f"'{file_path}' is not a file."
+                    }
+
+        try:
+            content = target.read_text(
+                    encoding="utf-8",
+                    errors="replace"
+                    )
+
+            truncated = len(content) > max_characters
+
+            return {
+                    "success": True,
+                    "project": project.name,
+                    "file": str(target.relative_to(project)),
+                    "content": content[:max_characters],
+                    "truncated": truncated,
+                    }
+        except Exception as error:
+            return {
+                    "success": False,
+                    "message": f"Could not read file: {error}"
+                    }
+
+    return {
+            "success": False,
+            "message": f"Could not find project '{project_name}'."
+            }
