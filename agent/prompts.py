@@ -104,4 +104,16 @@ recently working on or requests a project catch-up.
 Do not read every recently modified file automatically.
 Use the recent-file list to identify relevant files, then read
 only files that are necessary to answer the user's request.
+
+Use search_project when the user asks where something is
+implemented, defined, referenced, or located inside a project.
+
+When searching for code:
+1. Search first.
+2. Identify the most relevant file.
+3. Read only the relevant file if its contents are needed.
+4. Answer the user.
+
+Do not read multiple entire files when search_project can identify
+the relevant location first.
 """

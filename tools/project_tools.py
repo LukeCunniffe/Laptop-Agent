@@ -309,3 +309,125 @@ def get_recent_project_files(
             "success": False,
             "message": f"Could not find project '{project_name}'."
             }
+
+def search_project(
+        project_name: str,
+        query:str,
+        max_results: int = 20
+        ) -> dict:
+    """Search text/source files inside a project for a string"""
+
+    requested_name = (
+            project_name
+            .lower()
+            .replace("_", "")
+            .replace("-", "")
+            .replace(" ", "")
+            )
+
+    max_results = min(max(max_results, 1), 20)
+
+    for project in PROJECTS_DIRECTORY.iterdir():
+
+        if not project.is_dir():
+            continue
+
+        actual_name = (
+                project.name
+                .lower()
+                .replace("_", "")
+                .replace("-", "")
+                .replace(" ", "")
+                )
+
+        if actual_name != requested_name:
+            continue
+
+        matches = []
+
+        allowed_extensions = {
+                ".py",
+                ".cs",
+                ".java",
+                ".c",
+                ".h",
+                ".cpp",
+                ".hpp",
+                ".rs",
+                ".js",
+                ".ts",
+                ".html",
+                ".css",
+                ".json",
+                ".toml",
+                ".yaml",
+                ".yml",
+                ".md",
+                ".txt",
+                }
+
+        for item in project.rglob("*"):
+
+            if not item.is_file():
+                continue
+
+            relative = item.relative_to(project)
+
+            # Ignore hidden folders/files and caches
+            if any(part.startswith(".") for part in relative.parts):
+                continue
+
+            if "__pycache__" in relative.parts:
+                continue
+
+            if item.suffix.lower() not in allowed_extensions:
+                continue
+
+            # Avoid accidentally reading enormous files
+            try:
+                if item.stat().st_size > 500_000:
+                    continue
+            except OSError:
+                continue
+
+            try:
+                lines = item.read_text(
+                        encoding="utf-8",
+                        errors="replace"
+                        ).splitlines()
+
+            except Exception:
+                continue
+
+            for line_number, line in enumerate(lines, start=1):
+
+                if query.lower() in line.lower():
+
+                    matches.append(
+                            {
+                                "file": str(relative),
+                                "line": line_number,
+                                "text": line.strip()[:300],
+                                }
+                            )
+
+                    if len(matches) >= max_results:
+                        return {
+                                "success": True,
+                                "project": project.name,
+                                "query": query,
+                                "matches": matches,
+                                "truncated": True,
+                                }
+        return {
+                "success": True,
+                "project": project.name,
+                "query": query,
+                "matches": matches,
+                "truncated": False,
+                }
+
+    return {
+            "success": False,
+            "message": f"Could not find project '{project_name}'."
+            }

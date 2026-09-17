@@ -10,6 +10,7 @@ from tools.project_tools import (
         get_project_files,
         read_project_file,
         get_recent_project_files,
+        search_project,
         )
 
 from tools.application_tools import launch_application
@@ -42,6 +43,7 @@ class LaptopAgent:
                 "get_project_files": get_project_files,
                 "read_project_file": read_project_file,
                 "get_recent_project_files": get_recent_project_files,
+                "search_project": search_project,
                 }
 
         self.tools: list[ChatCompletionToolParam] = [
@@ -255,6 +257,44 @@ class LaptopAgent:
                                         }
                                     },
                                 "required": ["project_name"],
+                                },
+                            },
+                        },
+                {
+                        "type": "function",
+                        "function": {
+                            "name": "search_project",
+                            "description": (
+                                "Search source code and text files inside a project for "
+                                "a word, function name, class name, setting, or other text. "
+                                "Use this when the user asks where something is implemented "
+                                "or when you need to locate a relevant file before reading it."
+                                ),
+                            "parameters": {
+                                "type": "object",
+                                "properties": {
+                                    "project_name": {
+                                        "type": "string",
+                                        "description": "The name of the project."
+                                        },
+                                    "query": {
+                                        "type": "string",
+                                        "description": (
+                                            "The text to search for, such as a function name, "
+                                            "class name, variable, or keyword."
+                                            )
+                                        },
+                                    "max_results": {
+                                        "type": "integer",
+                                        "description": "Maximum number of matches to return.",
+                                        "minimum": 1,
+                                        "maximum": 20,
+                                        }
+                                    },
+                                "required": [
+                                    "project_name",
+                                    "query"
+                                    ],
                                 },
                             },
                         },
