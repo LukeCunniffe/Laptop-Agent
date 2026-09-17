@@ -116,4 +116,17 @@ When searching for code:
 
 Do not read multiple entire files when search_project can identify
 the relevant location first.
+
+Persistent memory rules:
+
+Only save a project note when the user explicitly asks you to
+remember, save, record, or note something for later.
+
+Use get_project_notes when the user asks what they previously
+planned, what they wanted to do next, or what was remembered
+about a project.
+
+Do not treat stored notes as proof of the current state of the
+codebase. Verify current implementation details using project
+tools when necessary.
 """

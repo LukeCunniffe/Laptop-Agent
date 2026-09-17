@@ -17,6 +17,11 @@ from tools.application_tools import launch_application
 from tools.git_tools import get_git_status, get_recent_commits
 from typing import cast
 
+from tools.memory_tools import (
+        remember_project_note,
+        get_project_notes,
+        )
+
 import json
 
 class LaptopAgent:
@@ -44,6 +49,8 @@ class LaptopAgent:
                 "read_project_file": read_project_file,
                 "get_recent_project_files": get_recent_project_files,
                 "search_project": search_project,
+                "remember_project_note": remember_project_note,
+                "get_project_notes": get_project_notes,
                 }
 
         self.tools: list[ChatCompletionToolParam] = [
@@ -295,6 +302,58 @@ class LaptopAgent:
                                     "project_name",
                                     "query"
                                     ],
+                                },
+                            },
+                        },
+                {
+                        "type": "function",
+                        "function": {
+                            "name": "remember_project_note",
+                            "description": (
+                                "Store a persistent note about a project. "
+                                "Only use this when the user explicitly asks to remember, "
+                                "save, record, or note something for later."
+                                ),
+                            "parameters": {
+                                "type": "object",
+                                "properties": {
+                                    "project_name": {
+                                        "type": "string",
+                                        "description": "The relevant project name."
+                                        },
+                                    "note": {
+                                        "type": "string",
+                                        "description": "The information to remember."
+                                        }
+                                    },
+                                "required": ["project_name", "note"],
+                                },
+                            },
+                        },
+                {
+                        "type": "function",
+                        "function": {
+                            "name": "get_project_notes",
+                            "description": (
+                                "Retrieve persistent notes previously saved about a project. "
+                                "Use this when the user asks what they planned to do, "
+                                "what was remembered, or what they wanted to do next."
+                                ),
+                            "parameters": {
+                                "type": "object",
+                                "properties": {
+                                    "project_name": {
+                                        "type": "string",
+                                        "description": "The project whose notes should be retrieved."
+                                        },
+                                    "limit": {
+                                        "type": "integer",
+                                        "description": "Maximum number of notes to return.",
+                                        "minimum": 1,
+                                        "maximum": 20,
+                                        }
+                                    },
+                                "required": ["project_name"],
                                 },
                             },
                         },
