@@ -9,6 +9,7 @@ from tools.project_tools import (
         open_project,
         get_project_files,
         read_project_file,
+        get_recent_project_files,
         )
 
 from tools.application_tools import launch_application
@@ -40,6 +41,7 @@ class LaptopAgent:
                 "get_recent_commits": get_recent_commits,
                 "get_project_files": get_project_files,
                 "read_project_file": read_project_file,
+                "get_recent_project_files": get_recent_project_files,
                 }
 
         self.tools: list[ChatCompletionToolParam] = [
@@ -226,6 +228,33 @@ class LaptopAgent:
                                         }
                                     },
                                 "required": ["project_name", "file_path"],
+                                },
+                            },
+                        },
+                {
+                        "type": "function",
+                        "function": {
+                            "name": "get_recent_project_files",
+                            "description": (
+                                "Return the most recently modified files inside a project. "
+                                "Use this when the user asks what they were recently working "
+                                "on or requests a project catch-up."
+                                ),
+                            "parameters": {
+                                "type": "object",
+                                "properties": {
+                                    "project_name": {
+                                        "type": "string",
+                                        "description": "The name of the project."
+                                        },
+                                    "count": {
+                                        "type": "integer",
+                                        "description": "Number of recent files to return.",
+                                        "minimum": 1,
+                                        "maximum": 10,
+                                        }
+                                    },
+                                "required": ["project_name"],
                                 },
                             },
                         },

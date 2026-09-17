@@ -1,5 +1,6 @@
 from pathlib import Path
 import subprocess
+from datetime import datetime
 
 PROJECTS_DIRECTORY = Path.home() / "projects"
 
@@ -222,6 +223,87 @@ def read_project_file(
                     "success": False,
                     "message": f"Could not read file: {error}"
                     }
+
+    return {
+            "success": False,
+            "message": f"Could not find project '{project_name}'."
+            }
+
+def get_recent_project_files(
+        project_name: str,
+        count: int = 5
+        ) -> dict:
+    """Return the most recently modified files in a project"""
+
+    requested_name = (
+            project_name
+            .lower()
+            .replace("_", "")
+            .replace("-", "")
+            .replace(" ", "")
+            )
+
+    for project in PROJECTS_DIRECTORY.iterdir():
+
+        if not project.is_dir():
+            continue
+
+        actual_name = (
+                project.name
+                .lower()
+                .replace("_", "")
+                .replace("-", "")
+                .replace(" ", "")
+                )
+
+        if actual_name != requested_name:
+            continue
+
+        files = []
+
+        for item in project.rglob("*"):
+
+            if not item.is_file():
+                continue
+
+            relative = item.relative_to(project)
+
+            if any(part.startswith(".") for part in relative.parts):
+                continue
+
+            if "__pycache__" in relative.parts:
+                continue
+
+            files.append(
+                    {
+                        "file": str(relative),
+                        "modified": item.stat().st_mtime,
+                        }
+                    )
+
+            files.sort(
+                    key=lambda item: item["modified"],
+                    reverse=True
+                    )
+
+            recent = []
+
+            for item in files[:count]:
+
+                recent.append(
+                        {
+                            "file": item["file"],
+                            "modified": datetime.fromtimestamp(
+                                item["modified"]
+                                ).isoformat(timespec="seconds"),
+                            }
+                        )
+
+                return {
+                        "success": True,
+                        "project": project.name,
+                        "recent_files": recent,
+                        }
 
     return {
             "success": False,

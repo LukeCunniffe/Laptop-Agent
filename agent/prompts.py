@@ -97,4 +97,11 @@ analysis, explanation, or project inspection.
 
 Once enough information has been obtained to answer the request,
 stop using tools and give the answer.
+
+Use get_recent_project_files when the user asks what they were
+recently working on or requests a project catch-up.
+
+Do not read every recently modified file automatically.
+Use the recent-file list to identify relevant files, then read
+only files that are necessary to answer the user's request.
 """
