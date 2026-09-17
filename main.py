@@ -1,5 +1,10 @@
 from agent.agent import LaptopAgent
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
+
 def main():
 
     agent = LaptopAgent()

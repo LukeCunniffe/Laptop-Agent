@@ -4,8 +4,16 @@ from groq.types.chat.chat_completion_tool_param import ChatCompletionToolParam
 
 from agent.prompts import SYSTEM_PROMPT
 from tools.system_tools import get_system_info, get_disk_usage
-from tools.project_tools import list_projects
+from tools.project_tools import (
+        list_projects, 
+        open_project,
+        get_project_files,
+        )
+
 from tools.application_tools import launch_application
+from tools.git_tools import get_git_status, get_recent_commits
+from groq.types.chat import ChatCompletionMessageParam
+from typing import cast
 
 import json
 
@@ -27,6 +35,10 @@ class LaptopAgent:
                 "get_disk_usage": get_disk_usage,
                 "list_projects": list_projects,
                 "launch_application": launch_application,
+                "open_project": open_project,
+                "get_git_status": get_git_status,
+                "get_recent_commits": get_recent_commits,
+                "get_project_files": get_project_files,
                 }
 
         self.tools: list[ChatCompletionToolParam] = [
@@ -56,7 +68,11 @@ class LaptopAgent:
                     "type": "function",
                     "function": {
                         "name": "list_projects",
-                        "description": "List the project folders inside the user's Projects directory.",
+                        "description": (
+                            "List only the names of projects inside the user's "
+                            "~/projects directory. Use get_projet_files when the "
+                            "user want to inspect the contents or structure of a project."
+                            ),
                         "parameters": {
                             "type": "object",
                             "properties": {},
@@ -80,44 +96,147 @@ class LaptopAgent:
                             },
                         },
                     },
-            ]
+                {
+                        "type": "function",
+                        "function": {
+                            "name": "open_project",
+                            "description": (
+                                "Find a named project inside the user's ~/projects "
+                                "directory and open it in Neovim."
+                                ),
+                            "parameters": {
+                                "type": "object",
+                                "properties": {
+                                    "project_name": {
+                                        "type": "string",
+                                        "description": (
+                                            "The name of the project to open, "
+                                            "for example 'laptop agent'."
+                                            ),
+                                        }
+                                    },
+                                "required": ["project_name"],
+                                },
+                            },
+                        },
+                {
+                        "type": "function",
+                        "function": {
+                            "name": "get_git_status",
+                            "description": (
+                                "Check the git status of a project inside the user's "
+                                "~/projects directory and report modified, staged, "
+                                "or untracked files."
+                                ),
+                            "parameters": {
+                                "type": "object",
+                                "properties": {
+                                    "project_name": {
+                                        "type": "string",
+                                        "description": "The name of the project to inspect."
+                                        }
+                                    },
+                                "required": ["project_name"],
+                                },
+                            },
+                        },
+                {
+                        "type": "function",
+                        "function": {
+                            "name": "get_recent_commits",
+                            "description": (
+                                "Get the most recent Git commits for a project "
+                                "inside the user's ~/projects directory."
+                                ),
+                            "parameters": {
+                                "type": "object",
+                                "properties": {
+                                    "project_name": {
+                                        "type": "string",
+                                        "description": "The name of the project."
+                                        },
+                                    "count": {
+                                        "type": "integer",
+                                        "description": "How many recent commits to return."
+                                        }
+                                    },
+                                "required": ["project_name"],
+                                },
+                            },
+                        },
+                {
+                        "type": "function",
+                        "function": {
+                            "name": "get_project_files",
+                            "description": (
+                                "Inspect and return the files and folders inside a specific "
+                                "project. Use this when the user asks about a project's "
+                                "structure, contents, files, or other directories."
+                                ),
+                            "parameters": {
+                                "type": "object",
+                                "properties": {
+                                    "project_name": {
+                                        "type": "string",
+                                        "description": "The name of the project to inspect."
+                                        },
+                                    "max_depth": {
+                                        "type": "integer",
+                                        "description": (
+                                            "Maximum folder depth to inspect. "
+                                            "Usually 2 or 3 is sufficient."
+                                            )
+                                        }
+                                    },
+                                "required": ["project_name"],
+                                },
+                            },
+                        },
 
+            ]
     def respond(self, message: str) -> str:
 
         self.messages.append(
-                {
-                    "role": "user",
-                    "content": message
-                    }
-                )
+            {
+                "role": "user",
+                "content": message,
+            }
+        )
 
-        response = self.client.chat.completions.create(
+        max_iterations = 10
+
+        for _ in range(max_iterations):
+
+            response = self.client.chat.completions.create(
                 model=self.model,
                 messages=self.messages,
                 tools=self.tools,
-                )
+                tool_choice="auto",
+            )
 
-        assistant_message = response.choices[0].message
+            assistant_message = response.choices[0].message
 
-        if assistant_message.tool_calls:
-            self.messages.append(
+            # No tool request = final answer
+            if not assistant_message.tool_calls:
+
+                reply = assistant_message.content or ""
+
+                self.messages.append(
                     {
                         "role": "assistant",
-                        "content": assistant_message.content,
-                        "tool_calls": [
-                            {
-                                "id": call.id,
-                                "type": "function",
-                                "function": {
-                                    "name": call.function.name,
-                                    "arguments": call.function.arguments,
-                                    },
-                                }
-                            for call in assistant_message.tool_calls
-                            ],
-                        }
-                    )
+                        "content": reply,
+                    }
+                )
 
+                return reply
+
+            # Preserve the assistant's actual tool-call message
+            self.messages.append(
+                    cast(
+                        ChatCompletionMessageParam,
+                        assistant_message.model_dump(exclude_none=True)
+                        )
+                    )
 
             for tool_call in assistant_message.tool_calls:
 
@@ -128,44 +247,34 @@ class LaptopAgent:
                 function = self.available_tools.get(tool_name)
 
                 if function is None:
-                    tool_result = "Tool not found."
+
+                    tool_result = {
+                        "success": False,
+                        "message": f"Tool '{tool_name}' was not found.",
+                    }
+
                 else:
-                    arguments = json.loads(
+
+                    try:
+                        arguments = json.loads(
                             tool_call.function.arguments or "{}"
-                            )
-                    tool_result = function(**arguments)
+                        )
+
+                        tool_result = function(**arguments)
+
+                    except Exception as error:
+
+                        tool_result = {
+                            "success": False,
+                            "message": f"Tool failed: {error}",
+                        }
 
                 self.messages.append(
                         {
                             "role": "tool",
                             "tool_call_id": tool_call.id,
-                            "content": str(tool_result),
-                            }
-                        )
-
-            final_response = self.client.chat.completions.create(
-                model=self.model,
-                messages=self.messages,
-                tools=self.tools,
-            )
-
-            reply = final_response.choices[0].message.content or ""
-
-            self.messages.append(
-                    {
-                        "role": "assistant",
-                        "content": reply,
+                            "content": json.dumps(tool_result),
                         }
                     )
-            return reply
 
-        reply = response.choices[0].message.content or ""
-
-        self.messages.append(
-                {
-                    "role": "assistant",
-                    "content": reply
-                    }
-                )
-
-        return reply
+        return "I reached the maximum number of tool calls without completing the request."
