@@ -84,11 +84,58 @@ class LaptopAgentGUI:
         self.entry.focus()
 
     def agent_status(self, message: str) -> None:
+        status_messages = {
+                "Using tool: get_system_info":
+                "Checking system information...",
+
+                "Using tool: get_disk_usage":
+                "Checking storage...",
+
+                "Using tool: list_projects":
+                "Looking through your projects...",
+
+                "Using tool: get_project_files":
+                "Inspecting project files...",
+
+                "Using tool: read_project_file":
+                "Reading project file...",
+
+                "Using tool: get_recent_project_files":
+                "Checking recently modified files...",
+
+                "Using tool: search_project":
+                "Searching project code...",
+
+                "Using tool: get_git_status":
+                "Checking Git status...",
+
+                "Using tool: get_recent_commits":
+                "Checking recent commits...",
+
+                "Using tool: get_project_notes":
+                "Checking project memory...",
+
+                "Using tool: remember_project_note":
+                "Saving that to memory...",
+
+                "Using tool: complete_project_note":
+                "Updating project memory...",
+
+                "Using tool: launch_application":
+                "Launching application...",
+
+                "Using tool: open_project":
+                "Opening project...",
+                }
+        display_message = status_messages.get(
+                message,
+                message
+                )
         self.root.after(
                 0,
                 lambda: self.status.config(
-                    text=message
-                    )
+                text=display_message
+                )
                 )
 
     def add_message(
