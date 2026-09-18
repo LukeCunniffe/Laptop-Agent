@@ -5,7 +5,7 @@ from tkinter import scrolledtext
 from dotenv import load_dotenv
 
 from agent.agent import LaptopAgent
-
+from voice_input import record_and_transcribe
 
 load_dotenv()
 
@@ -64,6 +64,17 @@ class LaptopAgentGUI:
             side=tk.RIGHT,
             padx=(10, 0),
         )
+
+        self.mic_button = tk.Button(
+                self.input_frame,
+                text="Mic",
+                command=self.start_voice_input,
+                )
+
+        self.mic_button.pack(
+                side=tk.RIGHT,
+                padx=(10, 0),
+                )
 
         self.status = tk.Label(
             root,
@@ -182,6 +193,73 @@ class LaptopAgentGUI:
         )
 
         thread.start()
+
+    def start_voice_input(self) -> None:
+        self.mic_button.config(state=tk.DISABLED)
+
+        self.status.config(
+            text="Listening..."
+        )
+
+        thread = threading.Thread(
+            target=self.run_voice_input,
+            daemon=True,
+        )
+
+        thread.start()
+
+
+    def run_voice_input(self) -> None:
+        try:
+            transcription = record_and_transcribe()
+
+            self.root.after(
+                0,
+                self.finish_voice_input,
+                transcription,
+                None,
+            )
+
+        except Exception as error:
+            self.root.after(
+                0,
+                self.finish_voice_input,
+                "",
+                str(error),
+            )
+
+
+    def finish_voice_input(
+        self,
+        transcription: str,
+        error: str | None,
+        ) -> None:
+
+        self.mic_button.config(
+            state=tk.NORMAL
+        )
+
+        if error:
+            self.status.config(
+                text=f"Voice error: {error}"
+            )
+            return
+
+        self.entry.delete(
+            0,
+            tk.END
+        )
+
+        self.entry.insert(
+            0,
+            transcription
+        )
+
+        self.status.config(
+            text="Voice input ready"
+        )
+
+        self.entry.focus()
 
     def run_agent(self, message: str) -> None:
 
