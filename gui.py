@@ -5,7 +5,7 @@ from tkinter import scrolledtext
 from dotenv import load_dotenv
 
 from agent.agent import LaptopAgent
-from voice_input import record_and_transcribe
+from voice_input import VoiceRecorder
 
 load_dotenv()
 
@@ -17,6 +17,9 @@ class LaptopAgentGUI:
         self.agent = LaptopAgent(
                 status_callback=self.agent_status
                 )
+
+        self.voice_recorder = VoiceRecorder()
+        self.is_recording = False
 
         self.root.title("Laptop Agent")
         self.root.geometry("800x600")
@@ -68,7 +71,7 @@ class LaptopAgentGUI:
         self.mic_button = tk.Button(
                 self.input_frame,
                 text="Mic",
-                command=self.start_voice_input,
+                command=self.toggle_voice_input,
                 )
 
         self.mic_button.pack(
@@ -194,71 +197,114 @@ class LaptopAgentGUI:
 
         thread.start()
 
+    def toggle_voice_input(self) -> None:
+
+        if not self.is_recording:
+            self.start_voice_input()
+        else:
+            self.stop_voice_input()
+
+
     def start_voice_input(self) -> None:
-        self.mic_button.config(state=tk.DISABLED)
+
+        try:
+            self.voice_recorder.start_recording()
+
+            self.is_recording = True
+
+            self.mic_button.config(
+                    text="Stop"
+                    )
+
+            self.status.config(
+                    text="Listening..."
+                    )
+
+        except Exception as error:
+            self.status.config(
+                    text=f"Voice error: {error}"
+                    )
+
+
+    def stop_voice_input(self) -> None:
+
+        self.is_recording = False
+
+        self.mic_button.config(
+                text="Mic",
+                state=tk.DISABLED,
+                )
 
         self.status.config(
-            text="Listening..."
-        )
+                text="Transcribing..."
+                )
 
         thread = threading.Thread(
-            target=self.run_voice_input,
-            daemon=True,
-        )
+                target=self.run_transcription,
+                daemon=True,
+                )
 
         thread.start()
 
+    def run_transcription(self) -> None:
 
-    def run_voice_input(self) -> None:
         try:
-            transcription = record_and_transcribe()
+            transcription = (
+                    self.voice_recorder.stop_and_transcribe()
+                    )
 
             self.root.after(
-                0,
-                self.finish_voice_input,
-                transcription,
-                None,
-            )
+                    0,
+                    self.finish_voice_input,
+                    transcription,
+                    None,
+                    )
 
         except Exception as error:
-            self.root.after(
-                0,
-                self.finish_voice_input,
-                "",
-                str(error),
-            )
 
+            self.root.after(
+                    0,
+                    self.finish_voice_input,
+                    "",
+                    str(error),
+                    )
 
     def finish_voice_input(
-        self,
-        transcription: str,
-        error: str | None,
-        ) -> None:
+            self,
+            transcription: str,
+            error: str | None,
+            ) -> None:
 
         self.mic_button.config(
-            state=tk.NORMAL
-        )
+                text="Mic",
+                state=tk.NORMAL,
+                )
 
         if error:
             self.status.config(
-                text=f"Voice error: {error}"
-            )
+                    text=f"Voice error: {error}"
+                    )
+            return
+
+        if not transcription:
+            self.status.config(
+                    text="No speech detected"
+                    )
             return
 
         self.entry.delete(
-            0,
-            tk.END
-        )
+                0,
+                tk.END
+                )
 
         self.entry.insert(
-            0,
-            transcription
-        )
+                0,
+                transcription
+                )
 
         self.status.config(
-            text="Voice input ready"
-        )
-
+                text="Voice input ready"
+                )
         self.entry.focus()
 
     def run_agent(self, message: str) -> None:
