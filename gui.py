@@ -14,7 +14,9 @@ class LaptopAgentGUI:
 
     def __init__(self, root: tk.Tk):
         self.root = root
-        self.agent = LaptopAgent()
+        self.agent = LaptopAgent(
+                status_callback=self.agent_status
+                )
 
         self.root.title("Laptop Agent")
         self.root.geometry("800x600")
@@ -80,6 +82,14 @@ class LaptopAgentGUI:
         )
 
         self.entry.focus()
+
+    def agent_status(self, message: str) -> None:
+        self.root.after(
+                0,
+                lambda: self.status.config(
+                    text=message
+                    )
+                )
 
     def add_message(
         self,

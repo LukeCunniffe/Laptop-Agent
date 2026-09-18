@@ -27,9 +27,12 @@ import json
 
 class LaptopAgent:
 
-    def __init__(self):
+    def __init__(self, status_callback=None):
+        self.status_callback = status_callback
+
         self.client = Groq()
         self.model = "openai/gpt-oss-120b"
+        
 
         self.messages: list[ChatCompletionMessageParam] = [
                 {
@@ -361,6 +364,10 @@ class LaptopAgent:
                         },
 
             ]
+    def update_status(self, message: str) -> None:
+        if self.status_callback:
+            self.status_callback(message)
+
     def respond(self, message: str) -> str:
 
         self.messages.append(
@@ -410,6 +417,10 @@ class LaptopAgent:
                 tool_name = tool_call.function.name
 
                 print(f"\n[Using tool: {tool_name}]")
+
+                self.update_status(
+                        f"Using tool: {tool_name}"
+                        )
 
                 function = self.available_tools.get(tool_name)
 
