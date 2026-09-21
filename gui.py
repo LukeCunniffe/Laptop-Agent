@@ -22,18 +22,22 @@ class LaptopAgentGUI:
         self.is_recording = False
 
         self.root.title("Laptop Agent")
-        self.root.geometry("800x600")
+        self.root.geometry("900x650")
+        self.root.minsize(700, 500)
 
         self.chat = scrolledtext.ScrolledText(
             root,
             wrap=tk.WORD,
             state=tk.DISABLED,
+            font=("Sans", 11),
+            padx=10,
+            pady=10,
         )
         self.chat.pack(
             fill=tk.BOTH,
             expand=True,
-            padx=10,
-            pady=(10, 5),
+            padx=15,
+            pady=(15, 8),
         )
 
         self.input_frame = tk.Frame(root)
@@ -43,18 +47,22 @@ class LaptopAgentGUI:
             pady=(5, 5),
         )
 
-        self.entry = tk.Entry(
+        self.entry = tk.Text(
             self.input_frame,
-            font=("Sans", 12),
+            height=4,
+            wrap=tk.WORD,
+            font=("Sans", 11),
+            padx=8,
+            pady=8,
         )
         self.entry.pack(
             side=tk.LEFT,
-            fill=tk.X,
+            fill=tk.BOTH,
             expand=True,
         )
 
         self.entry.bind(
-            "<Return>",
+            "<Control-Return>",
             self.send_message,
         )
 
@@ -168,14 +176,20 @@ class LaptopAgentGUI:
         self.chat.config(state=tk.DISABLED)
         self.chat.see(tk.END)
 
-    def send_message(self, event=None) -> None:
+    def send_message(self, event=None) -> str | None:
 
-        message = self.entry.get().strip()
+        message = self.entry.get(
+                "1.0",
+                tk.END
+                ).strip()
 
         if not message:
             return
 
-        self.entry.delete(0, tk.END)
+        self.entry.delete(
+                "1.0",
+                tk.END
+                )
 
         self.add_message(
             "You",
@@ -196,6 +210,10 @@ class LaptopAgentGUI:
         )
 
         thread.start()
+
+        if event is not None:
+            return "break"
+        return None
 
     def toggle_voice_input(self) -> None:
 
@@ -293,12 +311,12 @@ class LaptopAgentGUI:
             return
 
         self.entry.delete(
-                0,
+                "1.0",
                 tk.END
                 )
 
         self.entry.insert(
-                0,
+                "1.0",
                 transcription
                 )
 
