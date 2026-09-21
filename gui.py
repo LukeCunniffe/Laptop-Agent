@@ -40,6 +40,34 @@ class LaptopAgentGUI:
             pady=(15, 8),
         )
 
+        self.chat.tag_configure(
+                "user_name",
+                justify="right",
+                font=("Sans", 10, "bold"),
+                spacing1=6,
+                )
+
+        self.chat.tag_configure(
+                "user_message",
+                justify="right",
+                font=("Sans", 11),
+                spacing3=12,
+                )
+
+        self.chat.tag_configure(
+                "agent_name",
+                justify="left",
+                font=("Sans", 10, "bold"),
+                spacing1=6,
+                )
+
+        self.chat.tag_configure(
+                "agent_message",
+                justify="left",
+                font=("Sans", 11),
+                spacing3=12,
+                )
+
         self.input_frame = tk.Frame(root)
         self.input_frame.pack(
             fill=tk.X,
@@ -87,15 +115,30 @@ class LaptopAgentGUI:
                 padx=(10, 0),
                 )
 
+        self.clear_button = tk.Button(
+                self.input_frame,
+                text="Clear",
+                command=self.clear_chat,
+                )
+
+        self.clear_button.pack(
+                side=tk.RIGHT,
+                padx=(10, 0),
+                )
+
         self.status = tk.Label(
             root,
             text="Ready",
             anchor="w",
+            relief=tk.SUNKEN,
+            bd=1,
+            padx=8,
+            pady=5,
         )
         self.status.pack(
             fill=tk.X,
-            padx=10,
-            pady=(0, 10),
+            padx=15,
+            pady=(0, 15),
         )
 
         self.add_message(
@@ -166,15 +209,43 @@ class LaptopAgentGUI:
         message: str
     ) -> None:
 
-        self.chat.config(state=tk.NORMAL)
+        self.chat.config(
+                state=tk.NORMAL
+                )
 
-        self.chat.insert(
-            tk.END,
-            f"{sender} > {message}\n\n"
-        )
+        if sender == "You":
+            self.chat.insert(
+                    tk.END,
+                    "You\n",
+                    "user_name",
+                    )
 
-        self.chat.config(state=tk.DISABLED)
-        self.chat.see(tk.END)
+            self.chat.insert(
+                    tk.END,
+                    f"{message}\n\n",
+                    "user_message",
+                    )
+
+        else:
+            self.chat.insert(
+                    tk.END,
+                    f"{sender}\n",
+                    "agent_name",
+                    )
+
+            self.chat.insert(
+                    tk.END,
+                    f"{message}\n\n",
+                    "agent_message",
+                    )
+
+        self.chat.config(
+                state=tk.DISABLED
+                )
+
+        self.chat.see(
+                tk.END
+                )
 
     def send_message(self, event=None) -> str | None:
 
@@ -338,6 +409,25 @@ class LaptopAgentGUI:
             self.finish_response,
             response,
         )
+
+    def clear_chat(self) -> None:
+
+        self.chat.config(
+                state=tk.NORMAL
+                )
+
+        self.chat.delete(
+                "1.0",
+                tk.END
+                )
+
+        self.chat.config(
+                state=tk.DISABLED
+                )
+
+        self.status.config(
+                text="Chat cleared"
+                )
 
     def finish_response(
         self,
