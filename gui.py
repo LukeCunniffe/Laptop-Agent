@@ -14,9 +14,10 @@ class LaptopAgentGUI:
 
     def __init__(self, root: tk.Tk):
         self.root = root
+
         self.agent = LaptopAgent(
-                status_callback=self.agent_status
-                )
+            status_callback=self.agent_status
+        )
 
         self.voice_recorder = VoiceRecorder()
         self.is_recording = False
@@ -24,6 +25,119 @@ class LaptopAgentGUI:
         self.root.title("Laptop Agent")
         self.root.geometry("900x650")
         self.root.minsize(700, 500)
+
+
+        # -------------------------
+        # Bottom controls
+        # -------------------------
+
+        self.bottom_frame = tk.Frame(root)
+
+        self.bottom_frame.pack(
+            side=tk.BOTTOM,
+            fill=tk.X,
+            padx=15,
+            pady=(5, 15),
+        )
+
+
+        # Message input
+        self.entry = tk.Text(
+            self.bottom_frame,
+            height=4,
+            wrap=tk.WORD,
+            font=("Sans", 11),
+            padx=8,
+            pady=8,
+        )
+
+        self.entry.pack(
+            fill=tk.X,
+        )
+
+        self.entry.bind(
+            "<Control-Return>",
+            self.send_message,
+        )
+
+
+        # Button row
+        self.button_frame = tk.Frame(
+            self.bottom_frame
+        )
+
+        self.button_frame.pack(
+            fill=tk.X,
+            pady=(8, 0),
+        )
+
+
+        self.send_hint = tk.Label(
+            self.button_frame,
+            text="Ctrl+Enter to send",
+            anchor="w",
+        )
+
+        self.send_hint.pack(
+            side=tk.LEFT,
+        )
+
+
+        self.send_button = tk.Button(
+            self.button_frame,
+            text="Send",
+            command=self.send_message,
+        )
+
+        self.send_button.pack(
+            side=tk.RIGHT,
+        )
+
+
+        self.mic_button = tk.Button(
+            self.button_frame,
+            text="Mic",
+            command=self.toggle_voice_input,
+        )
+
+        self.mic_button.pack(
+            side=tk.RIGHT,
+            padx=(0, 8),
+        )
+
+
+        self.clear_button = tk.Button(
+            self.button_frame,
+            text="Clear",
+            command=self.clear_chat,
+        )
+
+        self.clear_button.pack(
+            side=tk.RIGHT,
+            padx=(0, 8),
+        )
+
+
+        # Status bar
+        self.status = tk.Label(
+            self.bottom_frame,
+            text="Ready",
+            anchor="w",
+            relief=tk.SUNKEN,
+            bd=1,
+            padx=8,
+            pady=5,
+        )
+
+        self.status.pack(
+            fill=tk.X,
+            pady=(8, 0),
+        )
+
+
+        # -------------------------
+        # Chat area
+        # -------------------------
 
         self.chat = scrolledtext.ScrolledText(
             root,
@@ -33,113 +147,44 @@ class LaptopAgentGUI:
             padx=10,
             pady=10,
         )
+
         self.chat.pack(
             fill=tk.BOTH,
             expand=True,
             padx=15,
-            pady=(15, 8),
+            pady=(15, 5),
+        )
+
+
+        # Message styling
+        self.chat.tag_configure(
+            "user_name",
+            justify="right",
+            font=("Sans", 10, "bold"),
+            spacing1=6,
         )
 
         self.chat.tag_configure(
-                "user_name",
-                justify="right",
-                font=("Sans", 10, "bold"),
-                spacing1=6,
-                )
-
-        self.chat.tag_configure(
-                "user_message",
-                justify="right",
-                font=("Sans", 11),
-                spacing3=12,
-                )
-
-        self.chat.tag_configure(
-                "agent_name",
-                justify="left",
-                font=("Sans", 10, "bold"),
-                spacing1=6,
-                )
-
-        self.chat.tag_configure(
-                "agent_message",
-                justify="left",
-                font=("Sans", 11),
-                spacing3=12,
-                )
-
-        self.input_frame = tk.Frame(root)
-        self.input_frame.pack(
-            fill=tk.X,
-            padx=10,
-            pady=(5, 5),
-        )
-
-        self.entry = tk.Text(
-            self.input_frame,
-            height=4,
-            wrap=tk.WORD,
+            "user_message",
+            justify="right",
             font=("Sans", 11),
-            padx=8,
-            pady=8,
-        )
-        self.entry.pack(
-            side=tk.LEFT,
-            fill=tk.BOTH,
-            expand=True,
+            spacing3=12,
         )
 
-        self.entry.bind(
-            "<Control-Return>",
-            self.send_message,
+        self.chat.tag_configure(
+            "agent_name",
+            justify="left",
+            font=("Sans", 10, "bold"),
+            spacing1=6,
         )
 
-        self.send_button = tk.Button(
-            self.input_frame,
-            text="Send",
-            command=self.send_message,
-        )
-        self.send_button.pack(
-            side=tk.RIGHT,
-            padx=(10, 0),
+        self.chat.tag_configure(
+            "agent_message",
+            justify="left",
+            font=("Sans", 11),
+            spacing3=12,
         )
 
-        self.mic_button = tk.Button(
-                self.input_frame,
-                text="Mic",
-                command=self.toggle_voice_input,
-                )
-
-        self.mic_button.pack(
-                side=tk.RIGHT,
-                padx=(10, 0),
-                )
-
-        self.clear_button = tk.Button(
-                self.input_frame,
-                text="Clear",
-                command=self.clear_chat,
-                )
-
-        self.clear_button.pack(
-                side=tk.RIGHT,
-                padx=(10, 0),
-                )
-
-        self.status = tk.Label(
-            root,
-            text="Ready",
-            anchor="w",
-            relief=tk.SUNKEN,
-            bd=1,
-            padx=8,
-            pady=5,
-        )
-        self.status.pack(
-            fill=tk.X,
-            padx=15,
-            pady=(0, 15),
-        )
 
         self.add_message(
             "Agent",
