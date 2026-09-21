@@ -12,6 +12,8 @@ from tools.project_tools import (
         get_recent_project_files,
         search_project,
         create_project_file,
+        propose_project_file_update,
+        apply_project_file_update,
         )
 
 from tools.application_tools import launch_application
@@ -58,6 +60,8 @@ class LaptopAgent:
                 "get_project_notes": get_project_notes,
                 "complete_project_note": complete_project_note,
                 "create_project_file": create_project_file,
+                "propose_project_file_update": propose_project_file_update,
+                "apply_project_file_update": apply_project_file_update,
                 }
 
         self.tools: list[ChatCompletionToolParam] = [
@@ -401,6 +405,75 @@ class LaptopAgent:
                                 },
                             },
                         },
+                {
+                    "type": "function",
+                    "function": {
+                        "name": "propose_project_file_update",
+                        "description": (
+                            "Prepare a proposed change to an existing project file "
+                            "without modifying the file. Use this when the user asks "
+                            "to change existing project code or text."
+                        ),
+                        "parameters": {
+                            "type": "object",
+                            "properties": {
+                                "project_name": {
+                                    "type": "string",
+                                    "description": "The project containing the file."
+                                },
+                                "file_path": {
+                                    "type": "string",
+                                    "description": (
+                                        "The path to the file relative to "
+                                        "the project root."
+                                    )
+                                },
+                                "old_text": {
+                                    "type": "string",
+                                    "description": (
+                                        "The exact existing text to replace."
+                                    )
+                                },
+                                "new_text": {
+                                    "type": "string",
+                                    "description": (
+                                        "The replacement text."
+                                    )
+                                }
+                            },
+                            "required": [
+                                "project_name",
+                                "file_path",
+                                "old_text",
+                                "new_text",
+                            ],
+                        },
+                    },
+                },
+                {
+                    "type": "function",
+                    "function": {
+                        "name": "apply_project_file_update",
+                        "description": (
+                            "Apply a previously proposed project file edit. "
+                            "Only use this after the user explicitly approves "
+                            "the proposed change."
+                        ),
+                        "parameters": {
+                            "type": "object",
+                            "properties": {
+                                "edit_id": {
+                                    "type": "string",
+                                    "description": (
+                                        "The edit ID returned by "
+                                        "propose_project_file_update."
+                                    )
+                                }
+                            },
+                            "required": ["edit_id"],
+                        },
+                    },
+                },
 
             ]
     def update_status(self, message: str) -> None:

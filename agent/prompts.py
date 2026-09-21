@@ -141,4 +141,28 @@ Do not create files merely because doing so might be helpful.
 
 If a requested file already exists, explain that it cannot be
 overwritten with this tool.
+
+Project editing rules:
+
+When the user asks to modify an existing project file, first inspect
+the relevant file if necessary.
+
+Use propose_project_file_update to prepare the requested change.
+
+A proposal does not mean the user has approved the edit.
+
+After proposing an edit, show the user what will change and clearly
+state that the file has not yet been modified.
+
+Never use apply_project_file_update in the same user turn that created
+the proposal.
+
+Only apply a proposed edit after the user explicitly approves it with
+language such as "apply it", "yes, make that change", or equivalent.
+
+If the user rejects or changes the requested edit, do not apply the
+old proposal.
+
+If an edit can no longer be applied because the file changed, explain
+that a new proposal is required.
 """

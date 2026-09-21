@@ -1,9 +1,12 @@
 from pathlib import Path
 import subprocess
+import difflib
+import uuid
 from datetime import datetime
 
 PROJECTS_DIRECTORY = Path.home() / "projects"
 
+PENDING_EDITS: dict[str, dict] = {}
 
 def list_projects() -> list[str]:
     """Return folders contained in the user's Projects directory."""
@@ -514,3 +517,206 @@ def create_project_file(
                 f"Project '{project_name}' was not found."
                 ),
             }
+
+def propose_project_file_update(
+        project_name: str,
+        file_path: str,
+        old_text: str,
+        new_text: str,
+        ) -> dict:
+    """Prepare an edit without modifying the file"""
+
+    normalised_name = (
+            project_name
+            .lower()
+            .replace("_", "")
+            .replace("-", "")
+            .replace(" ", "")
+            )
+
+    for project in PROJECTS_DIRECTORY.iterdir():
+
+        if not project.is_dir():
+            continue
+
+        project_normalised = (
+                project.name
+                .lower()
+                .replace("_", "")
+                .replace("-", "")
+                .replace(" ", "")
+                )
+
+        if project_normalised != normalised_name:
+            continue
+
+        project_root = project.resolve()
+
+        target = (
+                project_root / file_path
+                ).resolve()
+
+        if project_root not in target.parents:
+            return {
+                    "success": False,
+                    "message": (
+                        "File path must remain inside "
+                        "the selected project."
+                        ),
+                    }
+
+        if not target.exists():
+            return {
+                    "success": False,
+                    "message": "File does not exist.",
+                    }
+
+        if not target.is_file():
+            return {
+                    "success": False,
+                    "message": "Target is not a file.",
+                    }
+
+        if not old_text:
+            return {
+                    "success": False,
+                    "message": "Old text cannot be empty.",
+                    }
+
+        current_content = target.read_text(
+                encoding="utf-8",
+                errors="replace",
+                )
+
+        match_count = current_content.count(
+                old_text
+                )
+
+        if match_count == 0:
+            return {
+                    "success": False,
+                    "message": (
+                        "The requested text was not found "
+                        "in the new file."
+                        ),
+                    }
+        if match_count > 1:
+            return {
+                    "success": False,
+                    "message": (
+                        "The requested text occurs more "
+                        "than once. A more specific edit "
+                        "is required."
+                        ),
+                    }
+
+        updated_content = current_content.replace(
+                old_text,
+                new_text,
+                1,
+                )
+
+        diff = "".join(
+                difflib.unified_diff(
+                    current_content.splitlines(
+                        keepends=True
+                        ),
+                    updated_content.splitlines(
+                        keepends=True
+                        ),
+                    fromfile=file_path,
+                    tofile=file_path,
+                    )
+                )
+
+        edit_id = str(uuid.uuid4())
+
+        PENDING_EDITS[edit_id] = {
+                "project": project.name,
+                "file_path": file_path,
+                "target": target,
+                "original_content": current_content,
+                "updated_content": updated_content,
+                }
+
+        return {
+                "success": True,
+                "edit_id": edit_id,
+                "project": project.name,
+                "file": file_path,
+                "diff": diff,
+                "message": (
+                    "Edit prepared but not applied."
+                    ),
+                }
+
+    return {
+            "success": False,
+            "message": (
+                f"Project '{project_name}' was not found."
+                )
+            }
+
+def apply_project_file_update(
+        edit_id: str,
+        ) -> dict:
+    """Apply a previously proposed project edit."""
+    pending_edit = PENDING_EDITS.get(
+            edit_id
+            )
+    
+    if pending_edit is None:
+        return {
+                "success": False,
+                "message": (
+                    "Pending edit was not found."
+                    ),
+                }
+
+    target = pending_edit["target"]
+
+    if not target.exists():
+        return {
+                "success": False,
+                "message": (
+                "The target file no longer exists."
+                ),
+                }
+
+    current_content = target.read_text(
+            encoding="utf-8",
+            errors="replace",
+            )
+
+    # Important safety check:
+    # Don't apply if something changed since
+    # the proposal was generated.
+    if current_content != pending_edit[
+        "original_content"
+        ]:
+
+        return {
+                "success": False,
+                "message": (
+                    "The file has changed since this "
+                    "edit was proposed. Generate a new "
+                    "proposal before applying it."
+                    ),
+                }
+
+    target.write_text(
+            pending_edit["updated_content"],
+            encoding="utf-8",
+            )
+
+    del PENDING_EDITS[edit_id]
+
+    return {
+        "success": True,
+        "project": pending_edit["project"],
+        "file": pending_edit["file_path"],
+        "message": (
+            "The approved edit was applied."
+        ),
+    }
+
