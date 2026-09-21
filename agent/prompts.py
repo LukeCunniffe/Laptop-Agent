@@ -129,4 +129,16 @@ about a project.
 Do not treat stored notes as proof of the current state of the
 codebase. Verify current implementation details using project
 tools when necessary.
+
+File creation rules:
+
+Only use create_project_file when the user explicitly asks to create
+a new file.
+
+Never use create_project_file to replace or modify an existing file.
+
+Do not create files merely because doing so might be helpful.
+
+If a requested file already exists, explain that it cannot be
+overwritten with this tool.
 """

@@ -11,6 +11,7 @@ from tools.project_tools import (
         read_project_file,
         get_recent_project_files,
         search_project,
+        create_project_file,
         )
 
 from tools.application_tools import launch_application
@@ -56,6 +57,7 @@ class LaptopAgent:
                 "remember_project_note": remember_project_note,
                 "get_project_notes": get_project_notes,
                 "complete_project_note": complete_project_note,
+                "create_project_file": create_project_file,
                 }
 
         self.tools: list[ChatCompletionToolParam] = [
@@ -359,6 +361,43 @@ class LaptopAgent:
                                         }
                                     },
                                 "required": ["project_name"],
+                                },
+                            },
+                        },
+
+                {
+                        "type": "function",
+                        "function": {
+                            "name": "create_project_file",
+                            "description": (
+                                "Create a new text file inside an existing project. "
+                                "Only use this when the user explicitly asks to create "
+                                "a new file. This tool cannot overwrite existing files."
+                                ),
+                            "parameters": {
+                                "type": "object",
+                                "properties": {
+                                    "project_name": {
+                                        "type": "string",
+                                        "description": "The project containing the new file."
+                                        },
+                                    "file_path": {
+                                        "type": "string",
+                                        "description": (
+                                            "The path of the new file relative to "
+                                            "the project root."
+                                            )
+                                        },
+                                    "content": {
+                                        "type": "string",
+                                        "description": "The complete contents of the new file."
+                                        }
+                                    },
+                                "required": [
+                                    "project_name",
+                                    "file_path",
+                                    "content",
+                                    ],
                                 },
                             },
                         },

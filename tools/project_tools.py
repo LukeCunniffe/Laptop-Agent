@@ -431,3 +431,86 @@ def search_project(
             "success": False,
             "message": f"Could not find project '{project_name}'."
             }
+
+def create_project_file(
+        project_name: str,
+        file_path: str,
+        content: str,
+        ) -> dict:
+    """Create a new file inside an existing project"""
+
+    normalised_name = (
+            project_name
+            .lower()
+            .replace("_", "")
+            .replace("-", "")
+            .replace(" ", "")
+            )
+
+    for project in PROJECTS_DIRECTORY.iterdir():
+
+        if not project.is_dir():
+            continue
+
+        project_normalised = (
+                project_name
+                .lower()
+                .replace("_", "")
+                .replace("-", "")
+                .replace(" ", "")
+                )
+
+        if project_normalised != normalised_name:
+            continue
+
+        project_root = project.resolve()
+
+        target = (
+                project_root / file_path
+                ).resolve()
+
+        # Prevent writing outside the project
+        if project_root not in target.parents:
+            return {
+                    "success": False,
+                    "message": (
+                        "File path must remain inside "
+                        "the selected project."
+                        ),
+                    }
+
+        # Never overwrite files wiht this tool
+        if target.exists():
+            return {
+                    "success": False,
+                    "message": (
+                        f"File already exists: "
+                        f"{target.relative_to(project_root)}"
+                        ),
+                    }
+
+        # Create parent folder<s if necessary.
+        target.parent.mkdir(
+                parents=True,
+                exist_ok=True,
+                )
+
+        target.write_text(
+                content,
+                encoding="utf-8",
+                )
+
+        return {
+                "success": True,
+                "project": project.name,
+                "file": str(
+                    target.relative_to(project_root)
+                    ),
+                "message": "File created successfully.",
+                }
+    return {
+            "success": False,
+            "message": (
+                f"Project '{project_name}' was not found."
+                ),
+            }
