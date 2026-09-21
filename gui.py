@@ -236,6 +236,9 @@ class LaptopAgentGUI:
 
                 "Using tool: open_project":
                 "Opening project...",
+
+                "Using tool: get_system_status":
+                "Checking laptop status",
                 }
         display_message = status_messages.get(
                 message,

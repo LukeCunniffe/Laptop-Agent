@@ -3,7 +3,11 @@ from groq.types.chat import ChatCompletionMessageParam
 from groq.types.chat.chat_completion_tool_param import ChatCompletionToolParam
 
 from agent.prompts import SYSTEM_PROMPT
-from tools.system_tools import get_system_info, get_disk_usage
+from tools.system_tools import (
+        get_system_info, 
+        get_disk_usage,
+        get_system_status,
+        )
 from tools.project_tools import (
         list_projects, 
         open_project,
@@ -62,6 +66,7 @@ class LaptopAgent:
                 "create_project_file": create_project_file,
                 "propose_project_file_update": propose_project_file_update,
                 "apply_project_file_update": apply_project_file_update,
+                "get_system_status": get_system_status,
                 }
 
         self.tools: list[ChatCompletionToolParam] = [
@@ -474,7 +479,21 @@ class LaptopAgent:
                         },
                     },
                 },
-
+            {
+                    "type": "function",
+                    "function": {
+                        "name": "get_system_status",
+                        "description": (
+                            "Get a current overview of the laptop including "
+                            "CPU usage, memory usage, battery status, uptime, "
+                            "and system load."
+                            ),
+                        "parameters": {
+                            "type": "object",
+                            "properties": {},
+                            },
+                        },
+                    },
             ]
     def update_status(self, message: str) -> None:
         if self.status_callback:
