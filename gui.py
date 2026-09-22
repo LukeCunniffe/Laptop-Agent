@@ -239,6 +239,12 @@ class LaptopAgentGUI:
 
                 "Using tool: get_system_status":
                 "Checking laptop status",
+
+                "Using tool: get_network_status":
+                "Checking network status...",
+
+                "Using tool: get_process_status":
+                "Checking running processes...",
                 }
         display_message = status_messages.get(
                 message,

@@ -7,6 +7,8 @@ from tools.system_tools import (
         get_system_info, 
         get_disk_usage,
         get_system_status,
+        get_network_status,
+        get_process_status,
         )
 from tools.project_tools import (
         list_projects, 
@@ -67,6 +69,8 @@ class LaptopAgent:
                 "propose_project_file_update": propose_project_file_update,
                 "apply_project_file_update": apply_project_file_update,
                 "get_system_status": get_system_status,
+                "get_network_status": get_network_status,
+                "get_process_status": get_process_status,
                 }
 
         self.tools: list[ChatCompletionToolParam] = [
@@ -494,6 +498,61 @@ class LaptopAgent:
                             },
                         },
                     },
+            {
+                    "type": "function",
+                    "function": {
+                        "name": "get_network_status",
+                        "description": (
+                            "Inspect the laptop's current network interfaces, "
+                            "connection state, hostname, and IP addresses."
+                        ),
+                        "parameters": {
+                            "type": "object",
+                            "properties": {},
+                        },
+                    },
+                },
+            {
+                "type": "function",
+                "function": {
+                    "name": "get_process_status",
+                    "description": (
+                        "Inspect currently running processes. "
+                        "Can search for a specific application or return "
+                        "the processes using the most CPU or memory."
+                    ),
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "process_name": {
+                                "type": "string",
+                                "description": (
+                                    "Optional process or application name "
+                                    "to search for."
+                                ),
+                            },
+                            "limit": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 20,
+                                "description": (
+                                    "Maximum number of processes to return."
+                                ),
+                            },
+                            "sort_by": {
+                                "type": "string",
+                                "enum": [
+                                    "cpu",
+                                    "memory",
+                                ],
+                                "description": (
+                                    "Sort processes by CPU or memory usage."
+                                ),
+                            },
+                        },
+                    },
+                },
+            },
             ]
     def update_status(self, message: str) -> None:
         if self.status_callback:
